@@ -29,8 +29,8 @@ int muxRead[8] = {0,0,0,0,0,0,0,0};
 int shiftWrite[8] = {0,0,0,0,0,0,0,0};
 int controlOuput[8] = {0,0,0,0,0,0,0,0};
 //Estados
-int estadoVoltimetros[5] = {0,0,0,0,0}; // pos1 Selecciona el voltimetro pos 1,2,3,4 dicen estado del voltimetro 5V (1) o 20V (0)
-int estadoFuentes[3] = {0,0,0}; //pos 0 y 1 correponde al valor output pos 3 es la fuente seleccionada
+int estadoVoltimetros[5] = {0,0,0}; // pos0 Selecciona el voltimetro pos1 selecciona voltimetros 0 y 1, pos2 selecciona voltimetros 2 y 3, dicen estado del voltimetro 5V (1) o 20V (0)
+int estadoFuentes[3] = {0,0,0}; //pos0 y 1 correponde al valor output pos3 es la fuente seleccionada
 int estadoActualBotones[8];
 int estadoAnteriorBotones[8] = {0,0,0,0,0,0,0,0};
 
@@ -62,7 +62,9 @@ void setup ()
   	pinMode(output2, OUTPUT);
 }
 
-void muxHandler ()
+//////////////// Funciones Primarias ///////////////////
+
+void muxHandler () //Maneja las entradas y escribe el vector de entradas
 {
 	int i;
 	int ii;
@@ -85,7 +87,18 @@ void muxHandler ()
 	}
 }
 
-void shiftHandler ()
+void lecturaVoltimetros() //Recoje el valor en los voltimetros
+{
+
+	valorVoltimetros[0] = analogRead(voltimetro0);
+	valorVoltimetros[1] = analogRead(voltimetro1);
+	valorVoltimetros[2] = analogRead(voltimetro2);
+	valorVoltimetros[3] = analogRead(voltimetro3);
+	valorVoltimetros[4] = analogRead(voltimetro4);
+	valorVoltimetros[5] = analogRead(voltimetro5);
+}
+
+void shiftHandler ()  //Maneja las salidas
 {
 	int i;
 	
@@ -98,9 +111,31 @@ void shiftHandler ()
 	digitalWrite(ParallelCK, LOW);
 }
 
-void flancoSubida()
+void outputSelect ()  //Escribe el verctor de salidas
 {
+	//El primer valor depende de los voltimetros seleccionaodos
+	if (estadoVoltimetros[0] == 1)
+		shiftWrite[0]=1;
+	else 
+		shiftWrite[0]=0;
+	//El siguiente valor correponde a la fuente seleccinada
+	if (estadoFuentes[2] == 0)
+		shiftWrite[1]=1;
+	else
+		shiftWrite[1]=0;
+	//Los siguietes valores gestionan los reles selectores del voltimetro
+	if (estadoVoltimetros[1]==1)
+		shiftWrite[2]=1;
+	else
+		shiftWrite[2]=0;
+	if (estadoVoltimetros[2]==1)
+		shiftWrite[3]=1;
+	else
+		shiftWrite[3]=0;
+}
 
+void flancoSubida () //Detector de falnco para IO
+{
 	int i;
 
 	for(i=0; i<8; i++)
@@ -116,9 +151,8 @@ void flancoSubida()
 	}
 }
 
-void actualizarEstado()
+void actualizarEstado () //Gestion de la maquina de estados de control y valores de la fuente regulable
 {
-
 	if(estadoActualBotones[0] == 1)
 		estadoFuentes[estadoFuentes[3]]+=20;//Ajuste grueso
 	if(estadoActualBotones[1] == 1)
@@ -134,32 +168,32 @@ void actualizarEstado()
 		else
 	    	estadoFuentes[2] = 0;
 	}
-	if(estadoActual[6] == 1)
+	if(estadoActualBotones[6] == 1)
 		{
-			estadoVoltimetros++;
-			if (estadoVoltimetros > 4)
-				estadoVoltimetros = 1;
+			estadoVoltimetros[0]++;
+			if (estadoVoltimetros[0] > 2)
+				estadoVoltimetros[0] = 1;
 		}
 	//if(estadoActual[7] == 1)
 		
-	if(estadoActual[8] == 1)
+	if(estadoActualBotones[8] == 1)
 		{
 			if (estadoVoltimetros[estadoVoltimetros[0]] == 0)
 				estadoVoltimetros[estadoVoltimetros[0]] = 1;
 			else
 				estadoVoltimetros[estadoVoltimetros[0]] = 0;
 		}
-
 }
-void lecturaVoltimetros()
-{
 
-	valorVoltimetros[0] = analogRead(voltimetro0);
-	valorVoltimetros[1] = analogRead(voltimetro1);
-	valorVoltimetros[2] = analogRead(voltimetro2);
-	valorVoltimetros[3] = analogRead(voltimetro3);
-	valorVoltimetros[4] = analogRead(voltimetro4);
-	valorVoltimetros[5] = analogRead(voltimetro5);
+//////////////// Funciones de Debug ///////////////////
+
+void buttonDebug ()
+{
+	muxHandler;
+	int i;
+	for (i=0; i<8; i++)
+		shiftWrite[i]=muxRead[i];
+	shiftHandler;
 }
 
 void loop ()
