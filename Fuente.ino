@@ -25,7 +25,7 @@ int voltimetro5 = A5;
 ///////////////////////////// Control /////////////////////////////
 //IO
 int valorVoltimetros[6]; //Guarda las lecturas de los voltimetros en orden
-int muxRead[8] = {0,0,0,0,0,0,0,0};
+int muxRead[8] = {0,1,0,1,0,1,0,1};
 int shiftWrite[8] = {0,0,0,0,0,0,0,0};
 int controlOuput[8] = {0,0,0,0,0,0,0,0};
 //Estados
@@ -69,7 +69,7 @@ void muxHandler () //Maneja las entradas y escribe el vector de entradas
 	int i;
 	int ii;
 	int iii;
-	int c;
+	int c = 0;
 
 	for (i=0; i<2; i++)
 	{
@@ -102,7 +102,8 @@ void shiftHandler ()  //Maneja las salidas
 {
 	int i;
 	
-	for(i=7; i>-1; i--){
+	for(i=7; i>-1; i--)
+	{
 		digitalWrite(SerialD, shiftWrite[i]);
 		digitalWrite(SerialCK, HIGH);
 		digitalWrite(SerialCK, LOW);
@@ -189,14 +190,14 @@ void actualizarEstado () //Gestion de la maquina de estados de control y valores
 
 void buttonDebug ()
 {
-	muxHandler;
+	muxHandler();
 	int i;
 	for (i=0; i<8; i++)
-		shiftWrite[i]=muxRead[i];
-	shiftHandler;
+		shiftWrite[i] = muxRead[i];
+	shiftHandler();
 }
 
 void loop ()
 {
-  
+  buttonDebug();
 }
