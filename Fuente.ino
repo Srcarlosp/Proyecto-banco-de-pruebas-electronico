@@ -1,20 +1,18 @@
+///////////////////////////// Declaracion de Librerias /////////////////////////////
+
+#include <LiquidCrystal.h>
+
 ///////////////////////////// Declaracion de Pines /////////////////////////////
+
 //Multiplexor
 int Y = 4;
-int A = 7;
-int B = 8;
-int C = 9;
+int A = 5;
+int B = 6;
+int C = 7;
 //Shift
 int SerialCK=3;
 int ParallelCK=2;
 int SerialD=1;
-//Shift-pantalla
-int PSerialCK=12;
-int PParallelCK=11;
-int PSerialD=10;
-//Fuentes
-int output1 = 5;
-int output2 = 6;
 //Voltimetros
 int voltimetro0 = A0;
 int voltimetro1 = A1;
@@ -24,15 +22,18 @@ int voltimetro4 = A4;
 int voltimetro5 = A5;
 ///////////////////////////// Control /////////////////////////////
 //IO
-int valorVoltimetros[6]; //Guarda las lecturas de los voltimetros en orden
+float valorVoltimetros[6]; //Guarda las lecturas de los voltimetros en orden
 int muxRead[8] = {0,1,0,1,0,1,0,1};
 int shiftWrite[8] = {0,0,0,0,0,0,0,0};
 int controlOuput[8] = {0,0,0,0,0,0,0,0};
 //Estados
-int estadoVoltimetros[5] = {0,0,0}; // pos0 Selecciona el voltimetro pos1 selecciona voltimetros 0 y 1, pos2 selecciona voltimetros 2 y 3, dicen estado del voltimetro 5V (1) o 20V (0)
-int estadoFuentes[3] = {0,0,0}; //pos0 y 1 correponde al valor output pos3 es la fuente seleccionada
+int estadoVoltimetros[5] = {0,0,0}; // pos0 selecciona el voltimetro pos1 selecciona voltimetros 0 y 1, pos2 selecciona voltimetros 2 y 3, dicen estado del voltimetro 5V (1) o 20V (0)
+//int estadoVoltimetros[4] ={20,20,20,20} selecciona el estado del voltimetro 5V (5) o 20V (20)
+int estadoFuentes[3] = {0,0,0}; //pos0 y 1 correponde al valor output pos2 es la fuente seleccionada
 int estadoActualBotones[8];
 int estadoAnteriorBotones[8] = {0,0,0,0,0,0,0,0};
+//Pantalla
+LiquidCrystal lcd(8, 9, 10, 11, 12, 13);
 
 
 void setup ()
@@ -53,13 +54,9 @@ void setup ()
   	pinMode(SerialCK, OUTPUT);
   	pinMode(ParallelCK, OUTPUT);
   	pinMode(SerialD, OUTPUT);
-  	//Shift
-  	pinMode(PSerialCK, OUTPUT);
-  	pinMode(PParallelCK, OUTPUT);
-  	pinMode(PSerialD, OUTPUT);
-  	//Fuente
-  	pinMode(output1, OUTPUT);
-  	pinMode(output2, OUTPUT);
+  	//Pantalla
+  	lcd.begin(16,2);
+  	lcd.print("hello, world!");
 }
 
 //////////////// Funciones Primarias ///////////////////
@@ -90,12 +87,22 @@ void muxHandler () //Maneja las entradas y escribe el vector de entradas
 void lecturaVoltimetros() //Recoje el valor en los voltimetros
 {
 
+
 	valorVoltimetros[0] = analogRead(voltimetro0);
 	valorVoltimetros[1] = analogRead(voltimetro1);
 	valorVoltimetros[2] = analogRead(voltimetro2);
 	valorVoltimetros[3] = analogRead(voltimetro3);
 	valorVoltimetros[4] = analogRead(voltimetro4);
 	valorVoltimetros[5] = analogRead(voltimetro5);
+
+	/*
+	valorVoltimetros[0] = analogRead(voltimetro0)*(estadoVoltimetro[0]/1023);
+	valorVoltimetros[1] = analogRead(voltimetro1)*(estadoVoltimetro[1]/1023);
+	valorVoltimetros[2] = analogRead(voltimetro2)*(estadoVoltimetro[2]/1023);
+	valorVoltimetros[3] = analogRead(voltimetro3)*(estadoVoltimetro[3]/1023);
+	valorVoltimetros[4] = analogRead(voltimetro4);
+	valorVoltimetros[5] = analogRead(voltimetro5);
+	*/
 }
 
 void shiftHandler ()  //Maneja las salidas
@@ -162,28 +169,36 @@ void actualizarEstado () //Gestion de la maquina de estados de control y valores
 		estadoFuentes[estadoFuentes[3]]-=20;//Ajuste grueso
 	if(estadoActualBotones[3] == 1)
 		estadoFuentes[estadoFuentes[3]]-=5;//Ajuste fino
-	if(estadoActualBotones[4] == 1)
+	if(estadoActualBotones[4] == 1)//Cambio de fuente
 	{
 		if (estadoFuentes[2] == 0)
 			estadoFuentes[2] = 1;
 		else
 	    	estadoFuentes[2] = 0;
 	}
-	if(estadoActualBotones[6] == 1)
+	if(estadoActualBotones[5] == 1)
 		{
 			estadoVoltimetros[0]++;
 			if (estadoVoltimetros[0] > 2)
 				estadoVoltimetros[0] = 1;
 		}
-	//if(estadoActual[7] == 1)
+	//if(estadoActual[6] == 1)
 		
-	if(estadoActualBotones[8] == 1)
+	if(estadoActualBotones[7] == 1)
 		{
 			if (estadoVoltimetros[estadoVoltimetros[0]] == 0)
 				estadoVoltimetros[estadoVoltimetros[0]] = 1;
 			else
 				estadoVoltimetros[estadoVoltimetros[0]] = 0;
 		}
+}
+
+//////////////// Funciones de Pantalla ///////////////////
+
+void actualizarPantalla () //Gestión de la pantalla
+{
+	lcd.print(" %.1f %.1f %.1f %.1f %.1f %.1f", valorVoltimetros[0], valorVoltimetros[1], estadoFuente[0], valorVoltimetros[2], valorVoltimetros[3], estadoFuente[1]);
+	//Hay que multiplicar la fuente por la K correspondiente, pendiente de revisión!!!!
 }
 
 //////////////// Funciones de Debug ///////////////////
@@ -201,3 +216,22 @@ void loop ()
 {
   buttonDebug();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
